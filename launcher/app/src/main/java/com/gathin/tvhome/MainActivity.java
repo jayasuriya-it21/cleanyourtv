@@ -68,7 +68,14 @@ import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.gathin.tvhome.content.demo.SyntheticContentFactory;
+import com.gathin.tvhome.content.model.ContentItem;
+import com.gathin.tvhome.content.ui.ContentRowAdapter;
+import com.gathin.tvhome.navigation.FocusMemory;
+import com.gathin.tvhome.navigation.RowNavigationManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -137,6 +144,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private View clockBlock;
     private View btnInputs;
     private TextView btnWifi;
+    private View btnSettings;
     private TextView shamsiDate;
     private TextView stats;
     private List<RaceWeekend.Race> raceCalendar;
@@ -213,6 +221,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private AppLibraryDialog appLibrary;
     private boolean libraryFocusPending;
     private RecyclerView.OnScrollListener pendingFocusScroll;
+
+    // Synthetic Tamil Spotlight row (Milestone 2 remote navigation prototype)
+    private View spotlightContainer;
+    private RecyclerView spotlightRow;
+    private ContentRowAdapter spotlightAdapter;
+    private final FocusMemory spotlightFocusMemory = new FocusMemory();
+    private boolean showSyntheticSpotlight;
+    private boolean navigationCameFromSpotlight;
+    private boolean focusWasOnSpotlight;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     /** Refreshes the network pill when the connection changes: at boot Wi-Fi often connects after Home is shown. */
@@ -425,6 +442,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         adapter.setSavedOrder(Order.ranks(Order.load(Order.file(this)), dockApps));
         grid.setAdapter(adapter);
 
+        showSyntheticSpotlight = cfg.showSyntheticSpotlight;
+        spotlightContainer = findViewById(R.id.spotlightContainer);
+        spotlightRow = findViewById(R.id.spotlightRow);
+        if (showSyntheticSpotlight && spotlightContainer != null && spotlightRow != null) {
+            setupSpotlightRow();
+        }
+
         // tvOS layout: push the dock row towards the bottom of the screen, leaving room for
         // rows_below_dock grid rows under it; the rest of the grid stays below until you press Down.
         int rowsBelowDock = cfg.rowsBelowDock;
@@ -490,7 +514,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
 
         btnInputs = findViewById(R.id.btnInputs);
-        View btnSettings = findViewById(R.id.btnSettings);
+        btnSettings = findViewById(R.id.btnSettings);
         btnInputs.setOnClickListener(v -> showInputs());
         btnWifi.setOnClickListener(v -> openNetworkPill());
         btnWifi.setOnLongClickListener(v -> {
@@ -513,6 +537,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
             if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                if (showSyntheticSpotlight && spotlightAdapter != null && spotlightAdapter.getItemCount() > 0) {
+                    focusSpotlightPoster(spotlightFocusMemory.getLastFocusedIndex());
+                    return true;
+                }
                 // Back to the dock tile Up came from, not wherever the focus finder lands.
                 focusTile(lastFocused % COLUMNS);
                 return true;
@@ -704,9 +732,35 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final String returnKey = lastFocusedKey;
         final int returnSlot = lastFocused;
         grid.post(() -> {
-            int pos = adapter.positionOf(returnKey);
-            if (returnToLibrary || libraryFocusPending) focusLibrary();
-            else focusTile(pos >= 0 ? pos : returnSlot);
+            if (isFinishing() || isDestroyed()) return;
+            View current = getCurrentFocus();
+            boolean userMovedElsewhere = (current != null && current != root && current.isShown()
+                    && current.getId() != R.id.posterContainer && current.getId() != R.id.card);
+
+            if (focusWasOnSpotlight) {
+                if (showSyntheticSpotlight && spotlightAdapter != null && spotlightAdapter.getItemCount() > 0) {
+                    if (!userMovedElsewhere) {
+                        int spotlightIndex = spotlightFocusMemory.resolveRestoration(
+                                showSyntheticSpotlight,
+                                SyntheticContentFactory.createSpotlightItems(this),
+                                false
+                        );
+                        if (spotlightIndex >= 0) {
+                            focusSpotlightPoster(spotlightIndex);
+                        }
+                    }
+                    tilesReady = true;
+                    return;
+                } else {
+                    focusWasOnSpotlight = false;
+                    spotlightFocusMemory.clear();
+                }
+            }
+            if (!userMovedElsewhere) {
+                int pos = adapter.positionOf(returnKey);
+                if (returnToLibrary || libraryFocusPending) focusLibrary();
+                else focusTile(pos >= 0 ? pos : returnSlot);
+            }
             tilesReady = true;
             showCardPrompt();
         });
@@ -753,6 +807,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onDestroy() {
         super.onDestroy();
         wallpaperPlayer.close();
+        if (spotlightRow != null) {
+            spotlightRow.removeCallbacks(null);
+        }
+        if (glass != null) {
+            glass.animate().cancel();
+        }
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (tim != null) tim.unregisterCallback(inputCallback);
@@ -1070,6 +1130,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     public void onTileFocused(int position, View card) {
         lastFocused = position;
         lastFocusedKey = adapter.keyAt(position);
+        focusWasOnSpotlight = false;
         // Focus restored before the first layout (cold start): the tile has no size yet, and the glass
         // would be sized to 2*pad. Run again once the tile is laid out.
         if (card.getWidth() == 0) {
@@ -1665,7 +1726,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     rtlAppGrid, keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
         }
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-            if (position < COLUMNS) return false;          // dock row: let focus move to the top bar
+            if (position < COLUMNS) {
+                if (showSyntheticSpotlight && spotlightAdapter != null && spotlightAdapter.getItemCount() > 0) {
+                    focusSpotlightFromDock(position);
+                    grid.playSoundEffect(SoundEffectConstants.NAVIGATION_UP);
+                    return true;
+                }
+                return false;          // dock row: let focus move to the top bar
+            }
             target = position - COLUMNS;
         } else {
             int lastRowStart = ((count - 1) / COLUMNS) * COLUMNS;
@@ -1686,6 +1754,189 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         libraryFocusPending = false;
         hideGlass();
         hideHero();
+    }
+
+    // ---- synthetic Tamil Spotlight shelf (Milestone 2) -------------------------------------------
+
+    private void setupSpotlightRow() {
+        spotlightContainer.setVisibility(View.VISIBLE);
+        LinearLayoutManager lm = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        spotlightRow.setLayoutManager(lm);
+        spotlightRow.setItemAnimator(null);
+        List<ContentItem> items = SyntheticContentFactory.createSpotlightItems(this);
+        spotlightAdapter = new ContentRowAdapter(items, new ContentRowAdapter.OnPosterListener() {
+            @Override
+            public void onPosterFocused(int position, ContentItem item, View view) {
+                spotlightFocusMemory.recordFocus(position, item.id);
+                navigationCameFromSpotlight = true;
+                focusWasOnSpotlight = true;
+            }
+
+            @Override
+            public void onPosterClicked(int position, ContentItem item, View view) {
+                Toast.makeText(MainActivity.this, item.title + " (Prototype Content)", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public boolean onPosterKey(int position, int keyCode, KeyEvent event) {
+                return handleSpotlightKey(position, keyCode);
+            }
+        });
+        spotlightRow.setAdapter(spotlightAdapter);
+        if (btnInputs != null) btnInputs.setNextFocusDownId(R.id.spotlightRow);
+        if (btnWifi != null) btnWifi.setNextFocusDownId(R.id.spotlightRow);
+        if (btnReorder != null) btnReorder.setNextFocusDownId(R.id.spotlightRow);
+        if (btnSettings != null) btnSettings.setNextFocusDownId(R.id.spotlightRow);
+    }
+
+    private boolean handleSpotlightKey(int position, int keyCode) {
+        if (spotlightAdapter == null || spotlightAdapter.getItemCount() <= 0) return false;
+        int count = spotlightAdapter.getItemCount();
+        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            boolean isLeft = (keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
+            if (RowNavigationManager.isHorizontalBoundary(position, count, isLeft, rtlAppGrid)) {
+                return true; // absorb boundary key to prevent focus loss
+            }
+            int target = RowNavigationManager.handleHorizontalKey(position, count, isLeft, rtlAppGrid);
+            focusSpotlightPoster(target);
+            spotlightRow.playSoundEffect(isLeft ? SoundEffectConstants.NAVIGATION_LEFT : SoundEffectConstants.NAVIGATION_RIGHT);
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+            int dockCount = adapter != null ? Math.min(adapter.appCount(), COLUMNS) : 0;
+            if (dockCount <= 0) {
+                return true; // absorb DOWN if no dock target exists
+            }
+            navigationCameFromSpotlight = true;
+            focusWasOnSpotlight = false;
+            int dockTarget = calculateDockTargetFromPoster(position);
+            focusTile(dockTarget);
+            grid.playSoundEffect(SoundEffectConstants.NAVIGATION_DOWN);
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+            return handleSpotlightUp(position);
+        }
+        return false;
+    }
+
+    private boolean handleSpotlightUp(int posterIndex) {
+        View[] buttons = new View[]{btnInputs, btnWifi, btnReorder, btnSettings};
+        List<RowNavigationManager.UtilityCandidate> candidates = new ArrayList<>();
+
+        Rect posterRect = new Rect();
+        boolean hasPosterRect = false;
+        if (spotlightRow != null) {
+            RecyclerView.ViewHolder vh = spotlightRow.findViewHolderForAdapterPosition(posterIndex);
+            if (vh != null && vh.itemView != null) {
+                vh.itemView.getGlobalVisibleRect(posterRect);
+                hasPosterRect = (posterRect.width() > 0);
+            }
+        }
+
+        for (int i = 0; i < buttons.length; i++) {
+            View b = buttons[i];
+            boolean valid = isValidUtilityTarget(b);
+            if (valid) {
+                Rect r = new Rect();
+                b.getGlobalVisibleRect(r);
+                candidates.add(RowNavigationManager.UtilityCandidate.valid(i, r.exactCenterX()));
+            } else {
+                candidates.add(RowNavigationManager.UtilityCandidate.invalid(i));
+            }
+        }
+
+        int selectedIndex;
+        if (hasPosterRect) {
+            selectedIndex = RowNavigationManager.selectBestUtilityTarget(posterRect.exactCenterX(), candidates);
+        } else {
+            int posterCount = spotlightAdapter != null ? spotlightAdapter.getItemCount() : 1;
+            selectedIndex = RowNavigationManager.selectBestUtilityTargetProportional(posterIndex, posterCount, candidates);
+        }
+
+        if (selectedIndex >= 0 && selectedIndex < buttons.length) {
+            View targetView = buttons[selectedIndex];
+            if (targetView != null && isValidUtilityTarget(targetView)) {
+                focusWasOnSpotlight = false;
+                targetView.requestFocus();
+                grid.playSoundEffect(SoundEffectConstants.NAVIGATION_UP);
+                return true;
+            }
+        }
+
+        // No valid target exists: consume UP, keep focus on current poster, do not call requestFocus
+        return true;
+    }
+
+    private boolean isValidUtilityTarget(View v) {
+        return v != null
+                && v.isAttachedToWindow()
+                && v.getVisibility() == View.VISIBLE
+                && v.isShown()
+                && v.isEnabled()
+                && v.isFocusable()
+                && v.getWidth() > 0
+                && v.getHeight() > 0;
+    }
+
+    private void focusSpotlightPoster(int position) {
+        if (spotlightRow == null || spotlightAdapter == null || spotlightAdapter.getItemCount() <= 0) return;
+        int target = Math.max(0, Math.min(position, spotlightAdapter.getItemCount() - 1));
+        spotlightRow.smoothScrollToPosition(target);
+        RecyclerView.ViewHolder vh = spotlightRow.findViewHolderForAdapterPosition(target);
+        if (vh != null) {
+            vh.itemView.requestFocus();
+        } else {
+            spotlightRow.post(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                RecyclerView.ViewHolder h = spotlightRow.findViewHolderForAdapterPosition(target);
+                if (h != null) h.itemView.requestFocus();
+            });
+        }
+    }
+
+    private void focusSpotlightFromDock(int dockPosition) {
+        if (spotlightAdapter == null || spotlightAdapter.getItemCount() <= 0) return;
+        int target = RowNavigationManager.calculateUpTarget(
+                dockPosition,
+                COLUMNS,
+                spotlightAdapter.getItemCount(),
+                spotlightFocusMemory.getLastFocusedIndex(),
+                navigationCameFromSpotlight
+        );
+        navigationCameFromSpotlight = false;
+        focusSpotlightPoster(target);
+    }
+
+    private int calculateDockTargetFromPoster(int posterPosition) {
+        int dockCount = adapter != null ? Math.min(adapter.appCount(), COLUMNS) : COLUMNS;
+        if (dockCount <= 0) return 0;
+        if (spotlightRow != null) {
+            RecyclerView.ViewHolder posterVh = spotlightRow.findViewHolderForAdapterPosition(posterPosition);
+            if (posterVh != null) {
+                Rect posterRect = new Rect();
+                posterVh.itemView.getGlobalVisibleRect(posterRect);
+                float posterCenterX = posterRect.exactCenterX();
+                float[] dockCenters = new float[dockCount];
+                boolean allFound = true;
+                for (int i = 0; i < dockCount; i++) {
+                    RecyclerView.ViewHolder dockVh = grid.findViewHolderForAdapterPosition(i);
+                    if (dockVh != null) {
+                        Rect r = new Rect();
+                        dockVh.itemView.getGlobalVisibleRect(r);
+                        dockCenters[i] = r.exactCenterX();
+                    } else {
+                        allFound = false;
+                        break;
+                    }
+                }
+                if (allFound) {
+                    return RowNavigationManager.calculateDownTargetGeometric(posterCenterX, dockCenters);
+                }
+            }
+        }
+        int posterCount = spotlightAdapter != null ? spotlightAdapter.getItemCount() : 1;
+        return RowNavigationManager.calculateDownTargetProportional(posterPosition, posterCount, dockCount, COLUMNS);
     }
 
     @Override public void onLibraryUp() {

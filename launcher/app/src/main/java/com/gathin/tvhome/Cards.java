@@ -47,7 +47,7 @@ import java.util.TreeMap;
  * Home down. Every check is a plain character loop; see {@link CardFeature} for the guard around
  * every call into this class.
  */
-final class Cards {
+public final class Cards {
 
     /** One place for the names a module declares; see docs/specs/card.md. */
     static final String CATEGORY = "com.gathin.tvhome.category.DOCK_CARD";
@@ -94,22 +94,22 @@ final class Cards {
     }
 
     /** A valid card found on this TV, with the owner's decision for its current signer. */
-    static final class Card {
-        final String pkg;
-        final ComponentName component;
-        final String label;
+    public static final class Card {
+        public final String pkg;
+        public final ComponentName component;
+        public final String label;
         /** The app's own label, the one Settings shows. */
-        final String appLabel;
+        public final String appLabel;
         /** Null when the card has none. */
-        final String caption;
+        public final String caption;
         /** Opaque ARGB, or 0 when the card sets none. */
-        final int accent;
+        public final int accent;
         /** SHA-256 of the signing certificate, 64 lower case hex characters. */
-        final String digest;
-        final State state;
+        public final String digest;
+        public final State state;
 
-        Card(String pkg, ComponentName component, String label, String appLabel, String caption, int accent,
-             String digest, State state) {
+        public Card(String pkg, ComponentName component, String label, String appLabel, String caption, int accent,
+                    String digest, State state) {
             this.pkg = pkg;
             this.component = component;
             this.label = label;
@@ -461,7 +461,7 @@ final class Cards {
      * line and paragraph separator characters become spaces, runs of spaces collapse, at most 40
      * characters (never cutting a surrogate pair), the fallback (package name) when nothing is left.
      */
-    static String cleanLabel(String s, String fallback) {
+    public static String cleanLabel(String s, String fallback) {
         if (s == null) return fallback;
         StringBuilder b = new StringBuilder(Math.min(s.length(), 48));
         boolean space = true;   // leading spaces are dropped too

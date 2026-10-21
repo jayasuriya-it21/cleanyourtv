@@ -107,4 +107,20 @@
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Last opened %1$s</string>
+
+    <!-- Synthetic Tamil Spotlight content shelf (Milestone 2 prototype) -->
+    <string name="spotlight_title">Tamil Spotlight</string>
+    <string name="spotlight_item_1_title">Chennai After Rain</string>
+    <string name="spotlight_item_1_synopsis">An unexpected monsoon downpour alters the journeys of four strangers across the midnight streets of Chennai.</string>
+    <string name="spotlight_item_2_title">The Last Bus Home</string>
+    <string name="spotlight_item_2_synopsis">A lone conductor on the final highway transit through the Nilgiri foothills navigates an eventful late-night journey.</string>
+    <string name="spotlight_item_3_title">Marina Lights</string>
+    <string name="spotlight_item_3_synopsis">Two childhood friends reconnect beneath the lighthouse during the annual coastal festival.</string>
+    <string name="spotlight_item_4_title">Silent Temple</string>
+    <string name="spotlight_item_4_synopsis">An ancient stone sanctuary deep in the Thanjavur delta guards centuries of forgotten melodies and memories.</string>
+    <string name="spotlight_item_5_title">River of Stars</string>
+    <string name="spotlight_item_5_synopsis">An astronomy teacher in a quiet riverside town inspires a group of students during a rare meteor shower.</string>
+    <string name="spotlight_item_6_title">Southern Signal</string>
+    <string name="spotlight_item_6_synopsis">A veteran railway operator near Madurai uncovers an overlooked telegraph transmission from the past.</string>
+    <string name="spotlight_content_desc">%1$s (%2$d) · %3$s</string>
 </resources>

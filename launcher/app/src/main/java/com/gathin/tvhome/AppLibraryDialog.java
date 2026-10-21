@@ -155,39 +155,9 @@ final class AppLibraryDialog {
     void refresh() {
         dismissActions();
         PackageManager pm = activity.getPackageManager();
-        Map<String, ResolveInfo> unique = new LinkedHashMap<>();
-        tvPackages.clear();
-        // Prefer the TV entry when an app declares both categories.
-        for (String category : new String[]{Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER}) {
-            for (ResolveInfo info : pm.queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(category), 0)) {
-                if (info.activityInfo == null || !info.activityInfo.exported) continue;
-                String pkg = info.activityInfo.packageName;
-                if (Intent.CATEGORY_LEANBACK_LAUNCHER.equals(category)) tvPackages.add(pkg);
-                if (!pkg.equals(activity.getPackageName()) && !unique.containsKey(pkg)) unique.put(pkg, info);
-            }
-        }
-        totalApps = unique.size();
-        apps = new ArrayList<>(unique.values());
-        installTimes.clear();
-        labels.clear();
-        Map<String, Boolean> home = new HashMap<>();
-        for (ResolveInfo app : apps) {
-            String pkg = app.activityInfo.packageName;
-            home.put(pkg, onHome.test(pkg));
-            label(app);
-            try { installTimes.put(pkg, pm.getPackageInfo(pkg, 0).firstInstallTime); }
-            catch (PackageManager.NameNotFoundException | RuntimeException unavailable) { installTimes.put(pkg, 0L); }
-        }
-        catalogTime = System.currentTimeMillis();
-        Collator collator = Collator.getInstance();
-        apps.sort((a, b) -> {
-            String pa = a.activityInfo.packageName, pb = b.activityInfo.packageName;
-            int priority = LibraryApps.comparePriority(home.get(pa), installTimes.get(pa),
-                    home.get(pb), installTimes.get(pb), catalogTime);
-            if (priority != 0) return priority;
-            int byLabel = collator.compare(label(a), label(b));
-            return byLabel != 0 ? byLabel : pa.compareTo(pb);
-        });
+        apps = com.gathin.tvhome.apps.AppDiscoveryManager.discoverLibraryResolves(
+                pm, activity.getPackageName(), tvPackages, onHome, labels, installTimes);
+        totalApps = apps.size();
         showCatalog();
     }
 

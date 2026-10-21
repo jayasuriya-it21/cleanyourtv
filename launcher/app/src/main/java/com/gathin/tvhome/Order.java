@@ -25,7 +25,7 @@ import java.util.Map;
  * Format, UTF-8 text: {@code tvhome-order 1}, then {@code dock <comma-separated dock_apps>}, then one tile key
  * (component, flattened short) per line.
  */
-final class Order {
+public final class Order {
 
     private static final String TAG = "TvHome.Order";
     static final String FILE_NAME = "order.txt";
@@ -81,7 +81,7 @@ final class Order {
     }
 
     /** Sort step for two tiles: saved ones first in saved order, then 0 to fall through to the usual rule. */
-    static int compare(Map<String, Integer> ranks, String keyA, String keyB) {
+    public static int compare(Map<String, Integer> ranks, String keyA, String keyB) {
         Integer a = ranks.get(keyA), b = ranks.get(keyB);
         if (a == null && b == null) return 0;
         if (a == null) return 1;

@@ -17,7 +17,7 @@ import java.util.TreeSet;
 import java.util.function.IntPredicate;
 
 /** Home shortcut choices made from the library, separate from theme defaults and tile ordering. */
-final class LibraryApps {
+public final class LibraryApps {
     static final int MAX_ADDED = 128;
     private static final long RECENT_MS = 7L * 24 * 60 * 60 * 1000;
     private static final int MAX_BYTES = MAX_ADDED * 256;
@@ -97,7 +97,7 @@ final class LibraryApps {
         return visible(tvApp, themeHidden, explicitlyAdded, false);
     }
 
-    static boolean visible(boolean tvApp, boolean themeHidden, boolean explicitlyAdded, boolean removedFromHome) {
+    public static boolean visible(boolean tvApp, boolean themeHidden, boolean explicitlyAdded, boolean removedFromHome) {
         return !removedFromHome && (explicitlyAdded || (tvApp && !themeHidden));
     }
 
@@ -106,7 +106,7 @@ final class LibraryApps {
     }
 
     /** Missing shortcuts first; recent installs lead that group. The caller sorts ties by label. */
-    static int comparePriority(boolean homeA, long installedA, boolean homeB, long installedB, long now) {
+    public static int comparePriority(boolean homeA, long installedA, boolean homeB, long installedB, long now) {
         if (homeA != homeB) return homeA ? 1 : -1;
         if (homeA) return 0;
         boolean recentA = recent(installedA, now), recentB = recent(installedB, now);

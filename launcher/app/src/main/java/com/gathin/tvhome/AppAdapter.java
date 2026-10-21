@@ -41,6 +41,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.gathin.tvhome.apps.AppDiscoveryManager;
+import com.gathin.tvhome.apps.InstalledApp;
+
 /**
  * App tiles. The first {@link MainActivity#COLUMNS} positions are the pinned dock (favourites, fixed order,
  * then empty slots up to a full row, see {@link DockSlots}), then the module cards the owner chose to show
@@ -228,64 +231,38 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
      */
     void reload(List<Cards.Card> cards) {
         PackageManager pm = ctx.getPackageManager();
-        Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
-        List<ResolveInfo> found = new ArrayList<>(pm.queryIntentActivities(probe, 0));
-        Set<String> tvPackages = new HashSet<>();
-        for (ResolveInfo ri : found) if (ri.activityInfo != null) tvPackages.add(ri.activityInfo.packageName);
-        leanbackPackages = tvPackages;
-        Set<String> added = LibraryApps.load(ctx);
-        Set<String> removed = LibraryApps.loadRemoved(ctx);
-        if (!added.isEmpty()) {
-            Set<String> seen = new HashSet<>(tvPackages);
-            for (ResolveInfo ri : pm.queryIntentActivities(
-                    new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)) {
-                if (ri.activityInfo != null && added.contains(ri.activityInfo.packageName)
-                        && seen.add(ri.activityInfo.packageName)) found.add(ri);
-            }
-        }
         Map<String, Cards.Card> cardByPkg = new HashMap<>();
         for (Cards.Card c : cards) cardByPkg.put(c.pkg, c);
+
+        AppDiscoveryManager.DiscoveryConfig discConfig = new AppDiscoveryManager.DiscoveryConfig(
+                ctx.getPackageName(),
+                hidden,
+                favourites,
+                savedRanks,
+                LibraryApps.load(ctx),
+                LibraryApps.loadRemoved(ctx),
+                appLabels,
+                appBanners,
+                cardByPkg
+        );
+
+        List<InstalledApp> discovered = AppDiscoveryManager.discoverHomeApps(
+                ctx, discConfig, this::bundledBanner);
+
+        Set<String> tvPkgs = new HashSet<>();
+        for (InstalledApp app : discovered) {
+            if (app.isTvNative()) tvPkgs.add(app.packageName);
+        }
+        leanbackPackages = tvPkgs;
+
         List<Entry> fresh = new ArrayList<>();
-        // Some system apps declare two leanback entry points under one name (Sony's Timers & Clock on the
-        // BRAVIA VU31), which would show as two identical tiles: keep the first per package and label.
-        Set<String> seen = new HashSet<>();
-        for (ResolveInfo ri : found) {
-            if (ri.activityInfo == null) continue;
-            String pkg = ri.activityInfo.packageName;
-            if (pkg.equals(ctx.getPackageName()) || !ri.activityInfo.exported
-                    || !LibraryApps.visible(tvPackages.contains(pkg), hidden.contains(pkg), added.contains(pkg), removed.contains(pkg))) continue;
-            ComponentName component = new ComponentName(pkg, ri.activityInfo.name);
-            Cards.Card card = cardByPkg.get(pkg);
-            if (card != null && !card.component.equals(component)) continue;   // the card stands in for this tile
-            // Same cleaner as the card prompt: an app label with a bidi override or line separator must not
-            // redraw the tile name as something else (#117).
-            String label = card != null ? card.label : Cards.cleanLabel(
-                    appLabels.containsKey(pkg) ? appLabels.get(pkg) : String.valueOf(ri.loadLabel(pm)), pkg);
-            if (!seen.add(pkg + '\n' + label)) continue;
-            Drawable banner = bundledBanner(appBanners.get(pkg));
-            if (banner == null) banner = loadBanner(pm, ri);
-            Drawable icon = ri.loadIcon(pm);
-            if (card != null) {
-                fresh.add(new Entry(Entry.CARD, label, component, banner, icon, card.caption, card.accent));
+        for (InstalledApp app : discovered) {
+            if (app.isCard) {
+                fresh.add(new Entry(Entry.CARD, app.label, app.component, app.banner, app.icon, app.caption, app.accentColor));
             } else {
-                fresh.add(new Entry(label, component, banner, icon));
+                fresh.add(new Entry(app.label, app.component, app.banner, app.icon));
             }
         }
-        Collections.sort(fresh, (a, b) -> {
-            // The owner's own order first; tiles it does not know (new installs) follow by the rule below.
-            int saved = Order.compare(savedRanks, a.component.flattenToShortString(), b.component.flattenToShortString());
-            if (saved != 0) return saved;
-            int fa = favourites.indexOf(a.pkg), fb = favourites.indexOf(b.pkg);
-            if (fa >= 0 || fb >= 0) {
-                if (fa < 0) return 1;
-                if (fb < 0) return -1;
-                return Integer.compare(fa, fb);
-            }
-            // Cards come right after the configured dock apps, before the alphabetical grid.
-            boolean ca = a.kind == Entry.CARD, cb = b.kind == Entry.CARD;
-            if (ca != cb) return ca ? -1 : 1;
-            return a.label.compareToIgnoreCase(b.label);
-        });
         // Retain the optional Default-home tile until dependent tile-ordering work is merged.
         if (showHomeSettings
                 && pm.resolveActivity(new Intent(Settings.ACTION_HOME_SETTINGS), 0) != null) {
