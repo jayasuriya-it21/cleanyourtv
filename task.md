@@ -4,7 +4,7 @@
 - **Device**: TCL 55T6D (Google TV, India region)
 - **Primary Languages**: Tamil (ta), English (en)
 - **Target OTT Apps**: Netflix, Amazon Prime Video, Disney+ Hotstar / JioHotstar, SunNXT, Zee5, SonyLIV, Aha Tamil, YouTube, VLC, Kodi, Jellyfin
-- **Hardware Profile**: Low-memory budget Android TV (~1 GB RAM)
+- **SoC / RAM / OS**: Unknown pending hardware probe (provisionally targeting low-memory budget Android TV)
 - **Branch**: `feature/unified-content-launcher`
 
 ---

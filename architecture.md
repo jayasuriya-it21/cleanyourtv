@@ -7,7 +7,8 @@ This document defines the architectural blueprint for the CleanYourTV Content Hu
 ## 1. Architectural Principles
 
 1. **Local-First & Offline-Resilient**: The launcher shell, installed apps, and cached content must be 100% operational without internet connectivity.
-2. **Strict Hardware Efficiency (1 GB RAM Budget)**:
+2. **Strict Hardware Efficiency (Memory Budget)**:
+   - Provisionally designed for low-memory Google TV hardware; exact RAM budget unknown until physical hardware probe.
    - Zero real-time visual blur (use static pre-rendered gradients or solid tinted layers).
    - Zero autoplay video feeds in rows.
    - Zero permanent background services or polling daemons.
@@ -97,7 +98,7 @@ com.gathin.tvhome/
 
 ## 3. Migration Map
 
-To ensure zero regressions, code is refactored incrementally through compatibility bridges without large-scale file moves:
+To ensure no automated regression is introduced, code is refactored incrementally through compatibility bridges without large-scale file moves:
 
 | Existing Class | Current Responsibility | Proposed Evolution | Milestone |
 | :--- | :--- | :--- | :---: |
@@ -115,9 +116,7 @@ To ensure zero regressions, code is refactored incrementally through compatibili
 To avoid conflating metadata IDs (e.g. TMDB) with provider-specific content identifiers:
 
 ```java
-public final class ContentIdentity implements Serializable {
-    private static final long serialVersionUID = 1L;
-
+public final class ContentIdentity {
     public final String canonicalId;         // e.g. "tmdb:movie:550"
     public final String metadataSource;      // e.g. "tmdb", "local", "synthetic"
     public final String providerId;          // e.g. "netflix", "hotstar", "prime"

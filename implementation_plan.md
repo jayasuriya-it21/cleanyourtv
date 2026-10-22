@@ -1,7 +1,8 @@
 # CleanYourTV Content Hub: Implementation Plan
 
 ## Executive Summary
-This implementation plan establishes a low-risk, phased roadmap for transforming `com.gathin.tvhome` into a unified Android TV content hub. Work proceeds through strictly verified milestones, prioritizing baseline stability, zero regressions, and local-first execution.
+
+This implementation plan establishes a low-risk, phased roadmap for transforming `com.gathin.tvhome` into a unified Android TV content hub. Work proceeds through strictly verified milestones, prioritizing baseline stability, no automated regression detected between milestones, and local-first execution.
 
 All physical TV validation and hardware testing on the TCL 55T6D remain **PENDING PHYSICAL DEVICE ARRIVAL**. Milestone 3 is strictly **BLOCKED** and must not begin until physical hardware acceptance of Milestone 2 / 2.5 is completed on the physical TV.
 
@@ -33,7 +34,7 @@ All physical TV validation and hardware testing on the TCL 55T6D remain **PENDIN
   - 155 automated unit tests passing across 18 test suites.
 - **Physical Verification (PENDING)**:
   - Physical D-pad remote responsiveness, tactile latency, and key bounce.
-  - Cold/warm start latency and runtime memory (PSS) profiling on MediaTek MT5895 SoC.
+  - Cold/warm start latency and runtime memory (PSS) profiling on the physical SoC (unknown pending hardware probe).
   - Blocked pending physical arrival of ordered TCL 55T6D.
 
 ### Milestone 2.5: Pre-Device Hardening & Prototype Gating (Completed Locally)

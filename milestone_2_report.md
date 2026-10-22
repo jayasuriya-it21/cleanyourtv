@@ -1,7 +1,12 @@
 # Milestone 2 Completion Report: Synthetic Content Shelf & Navigation Architecture
 
 **Project**: CleanYourTV Content Hub Launcher (`com.gathin.tvhome`)
-**Target Hardware**: TCL 55T6D (Google TV, MediaTek MT5895 class, ~1 GB RAM profile)
+**Target Device**: TCL 55T6D, ordered — not yet physically probed
+**SoC**: Unknown pending hardware probe
+**RAM**: Unknown pending hardware probe
+**Android / Google TV version**: Unknown pending hardware probe
+**Firmware**: Unknown pending hardware probe
+**Stock launcher package**: Unknown pending hardware probe
 **Date**: October 21, 2026
 **Status**: AUTOMATED QUALITY GATES PASSED; PHYSICAL ACCEPTANCE PENDING
 
@@ -106,7 +111,7 @@ stateDiagram-v2
 
 - **Finding**: In `MainActivity.java`, `GlassView` is specifically bound to app grid tiles via `onTileFocused` and an `OnGlobalFocusChangeListener` that explicitly hides `GlassView` whenever focus leaves `R.id.card`.
 - **Decision**: Synthetic poster cards utilize a dedicated, hardware-accelerated local focus treatment (`launcher/app/src/main/res/drawable/poster_card_border.xml` with a 1.06x scale micro-animation).
-- **Result**: `GlassView` cleanly fades out when focus enters `spotlightRow`, and smoothly springs back into position when focus returns to the app dock. This prevents visual collisions and avoids destabilizing the existing `GlassView` spring animation or `glassScrollShift` coordinates.
+- **Result (local source verification)**: `GlassView` is expected to fade out when focus enters `spotlightRow` and resume tracking when focus returns to the app dock, based on the global focus listener logic. Visual spring-animation aesthetics and render timing remain pending integrated hardware verification on the physical TCL 55T6D.
 - **Physical Verification State**: PENDING PHYSICAL HARDWARE ACCEPTANCE on TCL 55T6D.
 
 ---
@@ -133,10 +138,10 @@ stateDiagram-v2
 | :--- | :---: | :---: | :--- |
 | **Pure Navigation-Decision Logic** | Automated Unit Tests | **PASSED** | Deterministic boundary absorption, geometric targeting, and fallback logic fully tested in JUnit. |
 | **Android Layout Compilation** | Local Android Build | **PASSED** | Layouts compile cleanly for standard and IW configurations; 0 compilation errors. |
-| **Integrated Android Focus Behavior** | Android Runtime Shell | **NOT PHYSICALLY VERIFIED** | Validated via code inspection and JUnit decision models; physical remote traversal pending device delivery. |
+| **Integrated Android Focus Behavior** | Local Source Verification | **NOT PHYSICALLY VERIFIED** | Validated via code inspection and JUnit decision models; physical remote traversal pending device delivery. |
 | **Physical Remote Behavior** | Real TCL Remote | **PENDING** | Key bounce, tactile responsiveness, and rapid D-pad latency unverified without physical hardware. |
-| **Visual Result on TCL 55T6D** | 55" 4K Display | **PENDING** | Exact vector asset scaling, contrast, and layout aesthetics pending physical panel arrival. |
-| **Runtime Memory & Frame Performance** | Profiler / Systrace | **PENDING** | Startup latency, dropped frames, and runtime PSS memory consumption remain unmeasured. |
+| **Visual Result on TCL 55T6D** | 55" Physical Panel | **PENDING PHYSICAL VERIFICATION** | Exact vector asset scaling, contrast, and display-native aesthetics pending physical panel arrival. Display specifications unknown until hardware probe. |
+| **Runtime Memory & Frame Performance** | Profiler / Systrace | **PENDING** | Startup latency, dropped frames, and runtime PSS memory consumption remain unmeasured on physical hardware. |
 
 ---
 
@@ -225,7 +230,7 @@ Since the physical TCL 55T6D TV is not yet connected over ADB:
 
 1. Physical D-pad remote responsiveness and tactile latency during rapid directional navigation.
 2. HDMI CEC / Bluetooth remote key bounce behavior.
-3. Cold start rendering time on low-memory budget SoC (MediaTek MT5895 / 1 GB RAM).
-4. Visual inspection of vector poster drawables at 4K resolution on 55" display.
-5. Runtime memory profiling (PSS) and frame dropped statistics under `gfxinfo`.
+3. Cold-start and warm-start latency samples on the physical SoC (unknown pending hardware probe).
+4. Visual inspection of vector poster drawables at the display's native resolution on the 55" panel.
+5. Runtime memory profiling (PSS) and frame statistics under `dumpsys gfxinfo`.
 6. Complete execution of `physical_tv_acceptance_checklist.md`.

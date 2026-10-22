@@ -1,7 +1,12 @@
 # Milestone 2.5 Pre-Device Hardening Report
 
 **Project**: CleanYourTV Content Hub Launcher (`com.gathin.tvhome`)
-**Target Device**: TCL 55T6D (Google TV, MediaTek MT5895 SoC profile, ~1 GB RAM profile)
+**Target Device**: TCL 55T6D, ordered — not yet physically probed
+**SoC**: Unknown pending hardware probe
+**RAM**: Unknown pending hardware probe
+**Android / Google TV version**: Unknown pending hardware probe
+**Firmware**: Unknown pending hardware probe
+**Stock launcher package**: Unknown pending hardware probe
 **Date**: October 21, 2026
 **Status**: AUTOMATED QUALITY GATES PASSED; PHYSICAL ACCEPTANCE PENDING
 **Branch**: `feature/unified-content-launcher`
@@ -75,25 +80,27 @@ To prevent unverified UI modifications from affecting stock launcher fallback or
    ```xml
    <bool name="show_synthetic_spotlight">false</bool>
    ```
-2. **Behavior When Disabled (`false`) (Local Logic/Source Verification)**:
+2. **Behavior When Disabled (`false`) (Local Source Verification)**:
    - `spotlightContainer` remains `View.GONE` in layout XML.
-   - Consumes exactly 0 layout space.
+   - Expected from `View.GONE` semantics: consumes zero layout space.
    - Hidden spotlight child views cannot receive or request focus.
-   - Top utility bar and app dock maintain 100% of original direct navigation bindings in `MainActivity.java`.
+   - Top utility bar and app dock maintain original direct navigation bindings in `MainActivity.java` (pending integrated hardware verification).
    - The app grid remains the normal primary Home target.
-3. **Runtime Configuration Overlay Support (Local Logic/Source Verification)**:
+3. **Runtime Configuration Overlay Support (Local Source Verification)**:
    The feature can be enabled via local config overlay without rebuilding the APK:
    `/sdcard/Android/data/com.gathin.tvhome/files/config.json`:
+
    ```json
    {
      "show_synthetic_spotlight": true
    }
    ```
-4. **Pure Java Configuration Resolution (Local Logic/Source Verification)**:
+
+4. **Pure Java Configuration Resolution (Local Source Verification / Automated Logic Verification)**:
    Created `com.gathin.tvhome.config.ConfigPolicy`:
    - Preferred resolution receives an already-parsed nullable `Boolean` from `Config.java`.
    - Fallback raw string parser enforces strict fail-closed behavior on malformed, duplicate, nested, string, numeric, and similarly named values.
-   - Verified via automated JUnit tests on the host JVM; physical execution remains pending device arrival.
+   - Verified via automated JUnit tests on the host JVM; physical execution on device remains pending device arrival.
 
 ---
 
@@ -203,7 +210,7 @@ The domain models in `com.gathin.tvhome.content.model` were reviewed:
 
 Executed Gradle unit test suite via `.\gradlew.bat test`:
 
-- **Total Test Methods**: **174** (+19 new tests in M2.5)
+- **Total Test Methods**: **179** (+5 additional tests added during freeze audit)
 - **Total Test Suites**: **18**
 - **Failures**: **0**
 - **Errors**: **0**
@@ -220,7 +227,7 @@ Executed Android lint via `.\gradlew.bat lint`:
 - **Lint Errors**: **0**
 - **Lint Warnings**: **62**
 - **Informational Issues**: **80**
-- **Net Delta vs Baseline**: **0 new warnings** (all 8 warnings introduced in Milestone 2 were completely resolved).
+- **Net Delta vs Baseline**: **0 new warnings** (all 8 warnings introduced in Milestone 2 were resolved by Milestone 2.5 hardening).
 
 ---
 
@@ -268,8 +275,8 @@ The hardened Milestone 2.5 build adds only **2,158 bytes** over Milestone 2 pre-
 ## 14. Remaining Risks
 
 1. **Physical Remote Key Latency & Bounce**: Budget TV remotes can send spurious repeated scancodes or exhibit input latency that cannot be modeled in unit tests.
-2. **MediaTek MT5895 GPU Scaling**: The visual appearance of 6 vector XML drawables at 4K resolution on a 55" display needs hardware confirmation for rendering smoothness.
-3. **Runtime Memory Heap Overhead**: While APK size is well within budget (+41 KB total), real heap footprint under extended use must be verified via `dumpsys meminfo`.
+2. **Unknown SoC GPU Scaling**: The visual appearance of 6 vector XML drawables at the display's native resolution on the 55" panel needs hardware confirmation. SoC and display specifications are unknown pending hardware probe.
+3. **Runtime Memory Heap Overhead**: While APK size is well within budget (+41 KB total), real heap footprint under extended use must be verified via `dumpsys meminfo`. RAM budget is unknown pending hardware probe.
 
 ---
 
