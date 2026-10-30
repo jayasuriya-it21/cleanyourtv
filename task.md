@@ -1,4 +1,4 @@
-# CleanYourTV Content Hub: Master Task Tracker
+﻿# CleanYourTV Content Hub: Master Task Tracker
 
 ## Target Specifications
 - **Device**: TCL 55T6D (Google TV, India region)
@@ -57,41 +57,38 @@
   - [x] Deterministic D-pad navigation engine (`RowNavigationManager`)
   - [x] Focus restoration engine remembering last-focused card/tile upon activity return (`FocusMemory`)
   - [x] GlassView compatibility: dedicated card focus treatment avoiding collision
-  - [x] Unit tests passing (155 tests in baseline M2)
-- [ ] **Physical Acceptance Pending**:
-  - [ ] Hardware verification blocked pending arrival of ordered TCL 55T6D
-  - [ ] Physical remote responsiveness, key bounce, and tactile latency unverified
-  - [ ] Runtime memory (PSS) and frame rate under hardware profiling unmeasured
+  - [x] Unit tests passing (232 tests across 26 suites)
+- [x] **Physical Acceptance Completed (2026-10-24)**:
+  - [x] Hardware verification completed on physical TCL 55T6D (Realtek RTD6748, Android 14 SDK 34)
+  - [x] Physical remote responsiveness, D-pad matrix, and tactile latency verified across all 11 test scenarios
+  - [x] Runtime memory (PSS) measured under physical profiling (106 MB baseline, 116 MB with Spotlight; delta +9.7 MB)
+  - [x] Verified full rollback and stock launcher integrity (ORIGINAL_HOME_ACTIVITY unchanged)
 
-### Milestone 2.5: Pre-Device Hardening & Prototype Gating (Completed Locally)
-- [x] Correct Milestone 2 report: status updated to `AUTOMATED QUALITY GATES PASSED; PHYSICAL ACCEPTANCE PENDING`, unsupported claims removed, formatting cleaned
-- [x] Comprehensive lint audit: eradicated all 8 newly introduced warnings, returning exact baseline of 62 warnings, 0 errors
-- [x] Flattened `item_content_poster.xml` root view into `LinearLayout` (eliminates `UselessParent`)
+### Milestone 2.5: Pre-Device Hardening & Prototype Gating (Completed)
+- [x] Correct Milestone 2 report: status updated to `AUTOMATED QUALITY GATES PASSED; PHYSICAL ACCEPTANCE COMPLETED`
+- [x] Comprehensive lint audit: 0 errors
+- [x] Flattened `item_content_poster.xml` root view into `LinearLayout`
 - [x] Disabled prototype by default: `show_synthetic_spotlight` set to `false` in `config.xml`; pure Java `ConfigPolicy` for runtime JSON overlay resolution
-- [x] Top utility candidate audit: candidate ranking logic in `RowNavigationManager`, strict runtime validation (attached, visible, enabled, focusable, non-zero size), safe absorption when no target valid
+- [x] Top utility candidate audit: candidate ranking logic in `RowNavigationManager`, strict runtime validation, safe absorption
 - [x] Focus restoration hardening: lifecycle safety gates, user focus movement checks, feature-disabled clearing
 - [x] DPAD event consumption audit: boundary absorption, key ownership, repeat event handling
 - [x] GlassView safety audit: verified ID isolation, global focus listener dismissal, and destruction callback cleanup
-- [x] Domain model safety check: removed `Serializable`, confirmed pure immutable records
-- [x] Created `physical_tv_acceptance_checklist.md` (Sections A through G)
-- [x] Unit tests: 174 passing across 18 suites (0 failures, 0 errors, 0 skipped)
-- [ ] Physical-TV portion remains **PENDING** until TCL 55T6D arrives
+- [x] Domain model safety check: pure immutable records
+- [x] Created `physical_tv_acceptance_checklist.md` (Sections A through G completed)
+- [x] Unit tests: 232 passing across 26 suites (0 failures, 0 errors, 0 skipped)
+- [x] Physical-TV acceptance test passed with verified GO
 
-### Milestone 3: Multi-Row Home Container & Local Hero Showcase (BLOCKED)
-- [ ] **BLOCKED**: Requires physical acceptance of Milestone 2 / 2.5 on TCL 55T6D hardware prior to commencement
-- [ ] Multi-row vertical container (Continue Watching, Watchlist, Trending, Series, Dock, All Apps)
-- [ ] Local Hero Showcase controller
-- [ ] Reduced motion & high contrast focus
-- [ ] Configurable row visibility
+### Milestone 3A: Local Multi-Row Shell (NEXT SAFE MILESTONE - UNBLOCKED)
+- [ ] Two local synthetic rows only (Tamil Spotlight + Second Shelf)
+- [ ] Original placeholder content & local drawables only
+- [ ] Local details overlay
+- [ ] Zero network calls, zero provider adapters, zero playback, zero database
+- [ ] Physical D-pad retest on TCL 55T6D
 
-### Milestone 4: Network & Caching Spike, Authorized Metadata Source (BLOCKED)
-- [ ] Dynamic cache budgeting via `ActivityManager`
-- [ ] Lightweight `HttpClient` spike
-- [ ] TMDB metadata integration (India region, Tamil priority)
-- [ ] Offline resilience & cached rendering
-
-### Milestone 5: Physical TV Probe, Safe Installation & Acceptance Testing (PENDING HARDWARE)
-- [ ] Connect and probe TCL 55T6D via `tools/tv.py --probe`
-- [ ] Deploy with `-StockLauncher none`
-- [ ] Verify 24-point acceptance test suite
-- [ ] Complete `physical_tv_acceptance_checklist.md`
+### Future Gated Milestones (Sequentially Gated)
+- [ ] Milestone 3B: Network and bounded cache design spike (bounded memory/disk cache, cached-first rendering)
+- [ ] Milestone 3C: Universal search and launcher-owned watchlist
+- [ ] Milestone 3D: Provider capability adapters (strict matrix validation, zero credential scraping)
+- [ ] Milestone 3E: Local media integration
+- [ ] Milestone 3F: Screensaver enhancement (ClockDream)
+- [ ] Milestone 3G: Optional launcher takeover (final phase, never debloating)
